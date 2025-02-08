@@ -8,7 +8,6 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest  # Run the release on a separate runner
-    needs: build  # This job runs after the 'build' job completes successfully
     if: github.ref == 'refs/heads/master'  # Only trigger on the master branch push
 
     steps:
