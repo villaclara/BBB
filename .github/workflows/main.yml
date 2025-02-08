@@ -6,38 +6,12 @@ on:
       - master  # Trigger on push to the master branch
 
 jobs:
-  build:
-    runs-on: ubuntu-latest  # Run the action on the latest Ubuntu runner
-
-    steps:
-    # Step 1: Checkout the code from the repository
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    # Step 2: Set up .NET SDK
-    - name: Set up .NET SDK
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '8.0'  # Specify your .NET version here (e.g., '6.0', '7.0', etc.)
-
-    # Step 3: Install dependencies
-    - name: Install dependencies
-      run: dotnet restore ./src/BBB1.Server/BBB1.Server.csproj  # Specify the project file path
-
-    # Step 4: Build the project
-    - name: Build project
-      run: dotnet build ./src/BBB1.Server/BBB1.Server.csproj --configuration Release
-
-    # Step 5: Run tests
-    - name: Run tests
-      run: dotnet test ./src/BBB1.Server/BBB1.Server.csproj --no-build --verbosity normal  # Specify the project file path
-
   release:
-    runs-on: ubuntu-latest  # Run the release on a separate runner
-    needs: build  # This job runs after the 'build' job completes successfully
-    if: github.ref == 'refs/heads/master'  # Only trigger on the master branch push
+  runs-on: ubuntu-latest  # Run the release on a separate runner
+  needs: build  # This job runs after the 'build' job completes successfully
+  if: github.ref == 'refs/heads/master'  # Only trigger on the master branch push
 
-    steps:
+  steps:
     # Step 1: Checkout the code from the repository
     - name: Checkout code
       uses: actions/checkout@v2
@@ -46,7 +20,8 @@ jobs:
     - name: Get current version tag and increment
       id: tag_version
       run: |
-        latest_tag=$(git describe --tags --abbrev=0)
+        # Get the latest tag, or set a default if no tags exist
+        latest_tag=$(git tag --sort=-v:refname | head -n 1)
         if [[ -z "$latest_tag" ]]; then
           new_tag="v1.0.0"  # If no tags exist, start with v1.0.0
         else
@@ -69,3 +44,4 @@ jobs:
         release_name: Release ${{ env.new_tag }}
         body: |
           New release for version ${{ env.new_tag }}.
+
