@@ -1,25 +1,67 @@
-name: Main
+name: Build, Test and Release
 
 on:
   push:
-    branches: 
-      - master
+    branches:
+      - master  # Trigger on push to the master branch
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    
-    - name: Create new tag
-      run: |
-        TAG_NAME="v$(date +'%Y%m%d%H%M%S')"  # Generate a timestamp-based tag
-        git tag $TAG_NAME
-        git push origin $TAG_NAME
+  build:
+    runs-on: ubuntu-latest  # Run the action on the latest Ubuntu runner
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Token to interact with GitHub API
+    steps:
+    # Step 1: Checkout the code from the repository
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Step 2: Set up .NET SDK (make sure to match the version of your app)
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '6.0'  # Specify your .NET version here (e.g., '6.0', '7.0', etc.)
+
+    # Step 3: Install dependencies and build the project
+    - name: Install dependencies
+      run: dotnet restore
+
+    # Step 4: Run tests
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal  # Runs tests without rebuilding
+
+  release:
+    runs-on: ubuntu-latest  # Run the release on a separate runner
+    needs: build  # This job runs after the 'build' job completes successfully
+    if: github.ref == 'refs/heads/master'  # Only trigger on the master branch push
+
+    steps:
+    # Step 1: Checkout the code from the repository
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Step 2: Get the latest tag from git and increment it
+    - name: Get current version tag and increment
+      id: tag_version
+      run: |
+        latest_tag=$(git describe --tags --abbrev=0)
+        if [[ -z "$latest_tag" ]]; then
+          new_tag="v1.0.0"  # If no tags exist, start with v1.0.0
+        else
+          # Increment the patch version
+          new_tag=$(echo $latest_tag | awk -F. -v OFS=. '{$NF++;print}')
+        fi
+        echo "new_tag=$new_tag" >> $GITHUB_ENV
+
+    # Step 3: Create the new tag
+    - name: Create new Git tag
+      run: |
+        git tag ${{ env.new_tag }}
+        git push origin ${{ env.new_tag }}
+
+    # Step 4: Create a GitHub release
+    - name: Create GitHub release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ env.new_tag }}
+        release_name: Release ${{ env.new_tag }}
+        body: |
+          New release for version ${{ env.new_tag }}.
