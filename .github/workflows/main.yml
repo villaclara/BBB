@@ -20,13 +20,14 @@ jobs:
     - name: Get current version tag and increment
       id: tag_version
       run: |
-        # Get the latest tag, or set a default if no tags exist
         latest_tag=$(git tag --sort=-v:refname | head -n 1)
         if [[ -z "$latest_tag" ]]; then
           new_tag="v1.0.0"  # If no tags exist, start with v1.0.0
         else
-          # Increment the patch version
-          new_tag=$(echo $latest_tag | awk -F. -v OFS=. '{$NF++;print}')
+          # Increment the patch version properly
+          IFS='.' read -r major minor patch <<< "${latest_tag//v/}"  # Remove 'v' and split into components
+          ((patch++))  # Increment the patch version
+          new_tag="v$major.$minor.$patch"  # Reassemble the version string
         fi
         echo "new_tag=$new_tag" >> $GITHUB_ENV
 
