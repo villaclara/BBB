@@ -20,7 +20,8 @@ jobs:
     - name: Get current version tag and increment
       id: tag_version
       run: |
-        latest_tag=$(git tag --sort=-v:refname | head -n 1)
+        # Use 'git describe' to reliably get the latest tag
+        latest_tag=$(git describe --tags --abbrev=0)
         echo "latest_tag=$latest_tag"
         if [[ -z "$latest_tag" ]]; then
           new_tag="v1.0.0"  # If no tags exist, start with v1.0.0
