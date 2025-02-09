@@ -16,7 +16,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 
+        fetch-depth: 0  # Get all tags for the repo. If not set this the next step will fail.
 
     # Step 2: Get the latest tag from git and increment it
     - name: Get current version tag and increment
