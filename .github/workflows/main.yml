@@ -21,6 +21,7 @@ jobs:
       id: tag_version
       run: |
         latest_tag=$(git tag --sort=-v:refname | head -n 1)
+        echo "latest_tag"
         if [[ -z "$latest_tag" ]]; then
           new_tag="v1.0.0"  # If no tags exist, start with v1.0.0
         else
